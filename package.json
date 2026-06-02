@@ -1,0 +1,46 @@
+{
+  "name": "@curaos/notify-sdk",
+  "version": "0.1.0",
+  "private": false,
+  "description": "CuraOS @curaos/notify-sdk — typed REST client + event wire-types generated from notify-service's TypeSpec + AsyncAPI contracts (ADR-0103 TypeSpec-first). Zero hand-written transport code.",
+  "license": "MIT",
+  "type": "commonjs",
+  "packageManager": "bun@1.3.14",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "generate": "bun scripts/generate.mjs",
+    "build": "tsc",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit",
+    "ci": "bun run lint && bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "@hey-api/client-fetch": "0.13.1"
+  },
+  "devDependencies": {
+    "@asyncapi/parser": "3.6.0",
+    "@curaos/tsconfig": "workspace:*",
+    "@hey-api/openapi-ts": "0.98.1",
+    "@types/node": "22.19.19",
+    "json-schema-to-typescript": "15.0.4",
+    "typescript": "5.9.3"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "http://localhost:4873"
+  }
+}

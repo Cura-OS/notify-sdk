@@ -1,0 +1,26 @@
+{
+  "extends": "@curaos/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2024", "DOM"],
+    "types": ["node"],
+
+    // This package is ~99% generated client code (src/rest/** from
+    // @hey-api/client-fetch). That generated runtime is NOT authored to the
+    // workspace's strictest flags, so three workspace-default checks are
+    // relaxed FOR THIS PACKAGE ONLY (it carries almost no hand-written code):
+    //   - exactOptionalPropertyTypes: the fetch client passes `{ x: undefined }`
+    //     for optional fields rather than omitting the key (known hey-api shape).
+    //   - noUnusedLocals / noUnusedParameters: generated serializers keep
+    //     unused params for signature uniformity.
+    // Type SAFETY (strict, strictNullChecks, noImplicitAny, etc.) stays ON, so
+    // the public typed surface + the consumer smoke are still fully checked.
+    // The same relaxation is the reusable recipe for the sibling SDK lanes.
+    "exactOptionalPropertyTypes": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "test", "dist", "node_modules"]
+}
