@@ -3,7 +3,12 @@
 // ONLY the published SDK surface and exercises the typed operations + event
 // types — no hand-written HTTP/Kafka plumbing, no manual fetch, no DTO copies.
 
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
+// The `createClient` factory is re-exported through the SDK's REST barrel
+// (src/rest/client/index.ts). PR#177 raised a Critical against that re-export
+// target; this import asserts the barrel resolves the factory in EVERY SDK
+// regen (recipe-level guard baked into `gen:sdk`). See #308.
+import { createClient } from '../src/rest/client';
 import {
   client,
   notifysHealth,
@@ -18,12 +23,29 @@ import {
   type WriteAck,
 } from '../src/index';
 
+// PR#177 F10: the `client` singleton's config leaks across tests when each test
+// mutates it via setConfig. Reset it after every test so order-independence
+// holds (recipe-level — folded into the `gen:sdk`-emitted smoke).
+afterEach(() => {
+  client.setConfig({ baseUrl: undefined });
+});
+
 describe('@curaos/notify-sdk consumer surface', () => {
   test('exposes typed REST operation functions', () => {
     expect(typeof notifysHealth).toBe('function');
     expect(typeof notifysProtectedProbe).toBe('function');
     expect(typeof notifysProtectedWrite).toBe('function');
     expect(typeof notifysRead).toBe('function');
+  });
+
+  test('re-exports a working createClient factory through the REST barrel', () => {
+    // PR#177 Critical guard: `export { createClient } from './client.gen'`
+    // must resolve to a callable factory. A broken barrel re-export fails here
+    // (and at typecheck) in every SDK, not just notify.
+    expect(typeof createClient).toBe('function');
+    const isolated = createClient({ baseUrl: 'http://localhost:4001' });
+    expect(typeof isolated.request).toBe('function');
+    expect(typeof isolated.setConfig).toBe('function');
   });
 
   test('exposes a configurable client instance', () => {
