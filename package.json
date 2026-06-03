@@ -26,7 +26,8 @@
     "test:coverage": "bun test --coverage",
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit",
-    "ci": "bun run lint && bun run typecheck && bun run test && bun run build"
+    "ci": "bun run lint && bun run typecheck && bun run test && bun run build",
+    "publish-smoke": "node ../../../scripts/sdk-package-publishing.mjs --package notify"
   },
   "dependencies": {
     "@hey-api/client-fetch": "0.13.1"
