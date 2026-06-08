@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 // Resolve paths relative to THIS package so the recipe is portable across the
-// sibling SDK lanes (#279-284) — only the service slug changes.
+// sibling SDK lanes (#279-284) - only the service slug changes.
 const here = dirname(fileURLToPath(import.meta.url));
 
 // Source of truth: the OpenAPI 3.1 the notify-service emits from its TypeSpec
@@ -15,7 +15,7 @@ export default defineConfig({
   input: openapiInput,
   output: {
     path: resolve(here, 'src/rest'),
-    // No generator-side lint/format — the committed output stays deterministic
+    // No generator-side lint/format - the committed output stays deterministic
     // so the drift guard can rely on byte-equality. (`postProcess: []` is the
     // non-deprecated form of the old `format: false` / `lint: false`.)
     postProcess: [],

@@ -1,7 +1,7 @@
 // Consumer smoke (Epic #24 acceptance #2: "consumable from a sample app with
 // zero hand-written client code"). This file IS the sample consumer: it imports
 // ONLY the published SDK surface and exercises the typed operations + event
-// types — no hand-written HTTP/Kafka plumbing, no manual fetch, no DTO copies.
+// types - no hand-written HTTP/Kafka plumbing, no manual fetch, no DTO copies.
 
 import { afterEach, describe, expect, test } from 'bun:test';
 // The `createClient` factory is re-exported through the SDK's REST barrel
@@ -25,7 +25,7 @@ import {
 
 // PR#177 F10: the `client` singleton's config leaks across tests when each test
 // mutates it via setConfig. Reset it after every test so order-independence
-// holds (recipe-level — folded into the `gen:sdk`-emitted smoke).
+// holds (recipe-level - folded into the `gen:sdk`-emitted smoke).
 afterEach(() => {
   client.setConfig({ baseUrl: undefined });
 });

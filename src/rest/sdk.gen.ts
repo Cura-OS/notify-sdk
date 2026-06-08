@@ -29,7 +29,7 @@ export const notifysHealth = <ThrowOnError extends boolean = false>(options?: Op
 export const notifysProtectedProbe = <ThrowOnError extends boolean = false>(options?: Options<NotifysProtectedProbeData, ThrowOnError>): RequestResult<NotifysProtectedProbeResponses, NotifysProtectedProbeErrors, ThrowOnError> => (options?.client ?? client).get<NotifysProtectedProbeResponses, NotifysProtectedProbeErrors, ThrowOnError>({ url: '/notifys/protected', ...options });
 
 /**
- * Demonstration write — actor bound to the JWT principal.
+ * Demonstration write - actor bound to the JWT principal.
  */
 export const notifysProtectedWrite = <ThrowOnError extends boolean = false>(options: Options<NotifysProtectedWriteData, ThrowOnError>): RequestResult<NotifysProtectedWriteResponses, NotifysProtectedWriteErrors, ThrowOnError> => (options.client ?? client).post<NotifysProtectedWriteResponses, NotifysProtectedWriteErrors, ThrowOnError>({
     url: '/notifys/protected-write',

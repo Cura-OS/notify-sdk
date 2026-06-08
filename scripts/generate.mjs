@@ -40,7 +40,7 @@ run('bun', ['scripts/gen-events.mjs'], pkgRoot);
 
 // 4. Format the generated output with the repo's biome config. @hey-api emits
 // long single-line `index.ts` re-exports that the pre-commit biome hook would
-// otherwise rewrite — formatting here keeps the committed output == the hook
+// otherwise rewrite - formatting here keeps the committed output == the hook
 // output == a fresh regen, so test/drift.test.ts stays byte-stable. (`.gen.ts`
 // is biome-ignored, so this only normalizes the emitted index files.)
 run('bunx', ['biome', 'format', '--write', 'src'], pkgRoot);

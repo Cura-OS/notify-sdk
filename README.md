@@ -1,6 +1,6 @@
 # @curaos/notify-sdk
 
-Typed client for `notify-service` — REST operations and event wire-types,
+Typed client for `notify-service` - REST operations and event wire-types,
 **generated from the service's contracts**. No hand-written HTTP or Kafka
 plumbing; the SDK is the only client code a consumer needs.
 
@@ -52,7 +52,7 @@ await notifysHealth({ client: other });
 ## Event wire-types
 
 For event consumers, the SDK ships the **snake_case** envelope types the
-producer emits (do not camelCase — they are the on-the-wire contract):
+producer emits (do not camelCase - they are the on-the-wire contract):
 
 ```ts
 import type { NotifyEventPayload, EventHeaders } from '@curaos/notify-sdk';
@@ -63,7 +63,7 @@ function onNotify(payload: NotifyEventPayload, headers: EventHeaders) {
 ```
 
 > **Note (codegen #306):** `display_name` and `deleted_at` are nullable on the
-> wire but currently type as `string` (not `string | null`) — the source
+> wire but currently type as `string` (not `string | null`) - the source
 > AsyncAPI uses the deprecated `nullable: true` form that AsyncAPI 3.0.0
 > (JSON Schema 2020-12) does not honor. The types tighten to `| null` once #306
 > lands the 2020-12 `type: [..., "null"]` form and the spec is regenerated.
@@ -78,7 +78,7 @@ bun run generate
 ```
 
 The generated output under `src/` is committed and guarded: `test/drift.test.ts`
-fails if the committed SDK is not byte-identical to a fresh regeneration — a
+fails if the committed SDK is not byte-identical to a fresh regeneration - a
 contract change that was not re-run through `bun run generate`, or a generator
 version bump, is caught in CI.
 

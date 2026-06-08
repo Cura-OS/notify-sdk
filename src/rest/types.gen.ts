@@ -5,7 +5,7 @@ export type ClientOptions = {
 };
 
 /**
- * Liveness probe result — any authenticated principal may call it.
+ * Liveness probe result - any authenticated principal may call it.
  */
 export type HealthStatus = {
     status: string;
@@ -37,7 +37,7 @@ export type ProblemResponse = {
 };
 
 /**
- * Result of the demonstration write — actorId is the JWT-derived principal, never body-supplied.
+ * Result of the demonstration write - actorId is the JWT-derived principal, never body-supplied.
  */
 export type WriteAck = {
     status: string;

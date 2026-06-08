@@ -4,7 +4,7 @@
 // Re-runs the SAME generation the package ships with (`bun run generate`) and
 // asserts the committed src/ is byte-identical to a fresh regen. A change to
 // notify.tsp / notify.asyncapi.yaml that was NOT re-run through `generate`, OR a
-// generator-version bump that changes output, fails here — the committed SDK
+// generator-version bump that changes output, fails here - the committed SDK
 // can never silently drift from the contract.
 
 import { describe, expect, test } from 'bun:test';
@@ -52,7 +52,7 @@ describe('contract-drift guard', () => {
 
     // Byte-identical contents. A mismatch means the committed output is stale
     // (contract changed without `bun run generate`) OR a generator version
-    // drifted — run `bun run generate` under the committed lockfile and commit.
+    // drifted - run `bun run generate` under the committed lockfile and commit.
     for (const path of Object.keys(before)) {
       expect(after[path], `drift in ${path}`).toBe(before[path]);
     }

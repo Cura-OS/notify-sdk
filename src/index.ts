@@ -1,4 +1,4 @@
-// @curaos/notify-sdk — public surface.
+// @curaos/notify-sdk - public surface.
 //
 // Generated from notify-service's TypeSpec REST contract (specs/notify.tsp ->
 // OpenAPI 3.1 -> @hey-api/openapi-ts) and its AsyncAPI event contract
@@ -11,7 +11,7 @@
 // `client` instance. Configure the base URL via `client.setConfig({ baseUrl })`
 // or `createClient()` from `@hey-api/client-fetch`.
 //
-// Events: `NotifyEventPayload` + `EventHeaders` wire-types (snake_case — the
+// Events: `NotifyEventPayload` + `EventHeaders` wire-types (snake_case - the
 // canonical envelope; do NOT camelCase) for the event-consumer surface.
 
 export * from './rest';

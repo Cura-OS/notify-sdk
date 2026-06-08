@@ -1,6 +1,6 @@
 {
   "name": "@curaos/notify-sdk",
-  "description": "CuraOS @curaos/notify-sdk — typed REST client + event wire-types generated from notify-service's TypeSpec + AsyncAPI contracts (ADR-0103 TypeSpec-first). Zero hand-written transport code.",
+  "description": "CuraOS @curaos/notify-sdk - typed REST client + event wire-types generated from notify-service's TypeSpec + AsyncAPI contracts (ADR-0103 TypeSpec-first). Zero hand-written transport code.",
   "version": "0.1.0",
   "dependencies": {
     "@hey-api/client-fetch": "0.13.1"
