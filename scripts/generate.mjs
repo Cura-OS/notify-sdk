@@ -1,9 +1,10 @@
 // One-command contract → SDK regeneration (the contract-drift guard's regen
-// step). Establishes the reusable recipe for the sibling SDK lanes (#279-284):
+// step). The reusable recipe emitted by `gen:sdk` (#308):
 //
 //   1. compile the service TypeSpec contract -> OpenAPI 3.1 (spec:openapi)
 //   2. @hey-api/openapi-ts: OpenAPI -> typed REST client (src/rest)
 //   3. gen-events.mjs: AsyncAPI -> typed event wire-types (src/events.gen.ts)
+//   4. biome format the emitted index files so committed == hook == fresh-regen
 //
 // Run via `bun run generate`. A `.tsp` / `.asyncapi.yaml` change that is NOT
 // re-run through this command fails test/drift.test.ts (regenerate != committed).
@@ -33,7 +34,9 @@ function run(cmd, args, cwd) {
 run('bun', ['run', 'spec:openapi'], servicePath);
 
 // 2. OpenAPI -> typed REST client (config = openapi-ts.config.ts)
-run('bunx', ['@hey-api/openapi-ts'], pkgRoot);
+// Pin the exact version (matches the package.json devDep) so a fresh SDK regen
+// never resolves bunx `@latest` (MODULE_NOT_FOUND / version-drift foot-gun).
+run('bunx', ['@hey-api/openapi-ts@0.98.1'], pkgRoot);
 
 // 3. AsyncAPI -> typed event wire-types
 run('bun', ['scripts/gen-events.mjs'], pkgRoot);

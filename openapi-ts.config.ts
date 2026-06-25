@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 // Resolve paths relative to THIS package so the recipe is portable across the
-// sibling SDK lanes (#279-284) - only the service slug changes.
+// sibling SDK lanes - only the service slug changes.
 const here = dirname(fileURLToPath(import.meta.url));
 
 // Source of truth: the OpenAPI 3.1 the notify-service emits from its TypeSpec
@@ -19,6 +19,7 @@ export default defineConfig({
     // so the drift guard can rely on byte-equality. (`postProcess: []` is the
     // non-deprecated form of the old `format: false` / `lint: false`.)
     postProcess: [],
+    tsConfigPath: resolve(here, 'openapi-ts.tsconfig.json'),
   },
   plugins: ['@hey-api/client-fetch'],
 });
