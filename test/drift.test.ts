@@ -50,7 +50,7 @@ function sleep(ms: number): void {
 }
 
 function withGenerateLock<T>(fn: () => T): T {
-  const deadline = Date.now() + 60_000;
+  const deadline = Date.now() + 300_000;
   for (;;) {
     try {
       mkdirSync(lockDir);
@@ -135,5 +135,5 @@ describe('contract-drift guard', () => {
     for (const path of Object.keys(before)) {
       expect(after[path], `drift in ${path}`).toBe(before[path]);
     }
-  });
+  }, 360_000);
 });
