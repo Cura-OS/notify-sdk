@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { NotifysHealthData, NotifysHealthErrors, NotifysHealthResponses, NotifysProtectedProbeData, NotifysProtectedProbeErrors, NotifysProtectedProbeResponses, NotifysProtectedWriteData, NotifysProtectedWriteErrors, NotifysProtectedWriteResponses, NotifysReadData, NotifysReadErrors, NotifysReadResponses } from './types.gen';
+import type { NotifysHealthData, NotifysHealthErrors, NotifysHealthResponses, NotifysProtectedProbeData, NotifysProtectedProbeErrors, NotifysProtectedProbeResponses, NotifysProtectedWriteData, NotifysProtectedWriteErrors, NotifysProtectedWriteResponses, NotifysReadData, NotifysReadErrors, NotifysReadResponses, TemplatesCreateData, TemplatesCreateErrors, TemplatesCreateResponses, TemplatesListData, TemplatesListErrors, TemplatesListResponses, TemplatesReadData, TemplatesReadErrors, TemplatesReadResponses, TemplatesRemoveData, TemplatesRemoveErrors, TemplatesRemoveResponses, TemplatesRenderData, TemplatesRenderErrors, TemplatesRenderResponses, TemplatesUpdateData, TemplatesUpdateErrors, TemplatesUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,57 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: Record<string, unknown>;
 };
+
+/**
+ * List authorable templates for the JWT tenant.
+ */
+export const templatesList = <ThrowOnError extends boolean = false>(options: Options<TemplatesListData, ThrowOnError>): RequestResult<TemplatesListResponses, TemplatesListErrors, ThrowOnError> => (options.client ?? client).get<TemplatesListResponses, TemplatesListErrors, ThrowOnError>({ url: '/notify/templates', ...options });
+
+/**
+ * Author a new template (tenant-admin).
+ */
+export const templatesCreate = <ThrowOnError extends boolean = false>(options: Options<TemplatesCreateData, ThrowOnError>): RequestResult<TemplatesCreateResponses, TemplatesCreateErrors, ThrowOnError> => (options.client ?? client).post<TemplatesCreateResponses, TemplatesCreateErrors, ThrowOnError>({
+    url: '/notify/templates',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a template (tenant-admin).
+ */
+export const templatesRemove = <ThrowOnError extends boolean = false>(options: Options<TemplatesRemoveData, ThrowOnError>): RequestResult<TemplatesRemoveResponses, TemplatesRemoveErrors, ThrowOnError> => (options.client ?? client).delete<TemplatesRemoveResponses, TemplatesRemoveErrors, ThrowOnError>({ url: '/notify/templates/{id}', ...options });
+
+/**
+ * Read one template by id (tenant-scoped; 404 if absent/foreign).
+ */
+export const templatesRead = <ThrowOnError extends boolean = false>(options: Options<TemplatesReadData, ThrowOnError>): RequestResult<TemplatesReadResponses, TemplatesReadErrors, ThrowOnError> => (options.client ?? client).get<TemplatesReadResponses, TemplatesReadErrors, ThrowOnError>({ url: '/notify/templates/{id}', ...options });
+
+/**
+ * Edit a template's authorable fields (tenant-admin).
+ */
+export const templatesUpdate = <ThrowOnError extends boolean = false>(options: Options<TemplatesUpdateData, ThrowOnError>): RequestResult<TemplatesUpdateResponses, TemplatesUpdateErrors, ThrowOnError> => (options.client ?? client).patch<TemplatesUpdateResponses, TemplatesUpdateErrors, ThrowOnError>({
+    url: '/notify/templates/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Render a template by id against a context: {{var}} -> value.
+ */
+export const templatesRender = <ThrowOnError extends boolean = false>(options: Options<TemplatesRenderData, ThrowOnError>): RequestResult<TemplatesRenderResponses, TemplatesRenderErrors, ThrowOnError> => (options.client ?? client).post<TemplatesRenderResponses, TemplatesRenderErrors, ThrowOnError>({
+    url: '/notify/templates/{id}/render',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Liveness probe.
