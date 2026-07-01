@@ -12,8 +12,15 @@
 // or `createClient()` from `@hey-api/client-fetch`.
 //
 // Events: `NotifyEventPayload` + `EventHeaders` wire-types (snake_case - the
-// canonical envelope; do NOT camelCase) for the event-consumer surface.
+// canonical envelope; do NOT camelCase) for the event-consumer surface, plus
+// the clinical alert-type catalog types (`ClinicalAlertPayload`,
+// `EscalationRung`, XSRC-E4-10).
 
 export * from './rest';
 export { client } from './rest/client.gen';
-export type { NotifyEventPayload, EventHeaders } from './events.gen';
+export type {
+  NotifyEventPayload,
+  EventHeaders,
+  ClinicalAlertPayload,
+  EscalationRung,
+} from './events.gen';
