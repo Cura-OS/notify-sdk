@@ -3,6 +3,52 @@
 // `bun run generate` to refresh. Drift is enforced by test/drift.test.ts.
 
 /**
+ * The clinical alert-type catalog payload (XSRC-E4-10). Reference-only (PHI boundary, ADR-0201 §3.1.6): `subject_ref` + escalation-chain refs are opaque party references; `summary` is a bounded non-PHI string the KB-editable alert definition (`definition_ref`) authors.
+ */
+export interface ClinicalAlertPayload {
+/**
+ * Opaque alert-type code (e.g. critical-result, ddi-warfarin-nsaid).
+ */
+alert_type: string
+/**
+ * CDS Hooks Card.indicator vocabulary.
+ */
+severity: ("info" | "warning" | "critical")
+/**
+ * Opaque party reference the alert concerns (PHI subject reference).
+ */
+subject_ref: string
+tenant_id: string
+/**
+ * Ordered clinician refs the alert escalated through, oldest first.
+ */
+escalation_chain: {
+clinicianRef: string
+escalatedAt: string
+}[]
+high_risk: boolean
+/**
+ * When true, notify ALSO routes to the person via their chosen channel (person-centric re-centering, XSRC-E4-10 body).
+ */
+actionable: boolean
+/**
+ * Bounded non-PHI card summary (KB-authored).
+ */
+summary: string
+/**
+ * Reference to the KB-editable alert definition that fired.
+ */
+definition_ref: string
+source_service: string
+occurred_at: string
+}
+
+export interface EscalationRung {
+clinicianRef: string
+escalatedAt: string
+}
+
+/**
  * Canonical snake_case envelope (grill P1.6 - do NOT camelCase).
  */
 export interface NotifyEventPayload {

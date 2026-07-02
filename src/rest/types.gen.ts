@@ -5,11 +5,63 @@ export type ClientOptions = {
 };
 
 /**
+ * Create payload - identity (id/tenant/timestamps) is store/JWT-derived.
+ */
+export type CreateTemplateInput = {
+    name: string;
+    key: string;
+    channel: string;
+    locale?: string;
+    subject?: string | null;
+    body: string;
+};
+
+/**
  * Liveness probe result - any authenticated principal may call it.
  */
 export type HealthStatus = {
     status: string;
     layer: string;
+};
+
+/**
+ * A persisted authorable notification template.
+ */
+export type NotificationTemplate = {
+    id: string;
+    /**
+     * Human label an admin sees in the template list.
+     */
+    name: string;
+    /**
+     * Stable key callers reference (e.g. 'subscription.renewal-due.v1').
+     */
+    key: string;
+    /**
+     * Delivery channel: email | in_app | webhook.
+     */
+    channel: string;
+    /**
+     * BCP-47 locale of this variant (e.g. 'en', 'es'). Per-locale variants.
+     */
+    locale: string;
+    /**
+     * Optional subject line; null for body-only channels.
+     */
+    subject: string | null;
+    /**
+     * Body with {{var}} interpolation placeholders.
+     */
+    body: string;
+    createdAt: string;
+    updatedAt: string;
+};
+
+/**
+ * Tenant-scoped list of authorable templates.
+ */
+export type NotificationTemplateList = {
+    items: Array<NotificationTemplate>;
 };
 
 /**
@@ -37,6 +89,37 @@ export type ProblemResponse = {
 };
 
 /**
+ * Render request - the {{var}} substitution context (non-PHI labels only).
+ */
+export type RenderTemplateInput = {
+    context?: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * Result of a render: substituted subject+body + any unresolved variables.
+ */
+export type RenderedTemplate = {
+    subject: string | null;
+    body: string;
+    /**
+     * Variable names referenced by the template but absent from the context.
+     */
+    missing: Array<string>;
+};
+
+/**
+ * Patch payload - key + channel are immutable; at least one field set.
+ */
+export type UpdateTemplateInput = {
+    name?: string;
+    locale?: string;
+    subject?: string | null;
+    body?: string;
+};
+
+/**
  * Result of the demonstration write - actorId is the JWT-derived principal, never body-supplied.
  */
 export type WriteAck = {
@@ -44,6 +127,234 @@ export type WriteAck = {
     layer: string;
     actorId: string;
 };
+
+export type TemplatesListData = {
+    body?: never;
+    headers: {
+        Authorization: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/notify/templates';
+};
+
+export type TemplatesListErrors = {
+    /**
+     * Access is unauthorized.
+     */
+    401: ProblemResponse;
+    /**
+     * Access is forbidden.
+     */
+    403: ProblemResponse;
+};
+
+export type TemplatesListError = TemplatesListErrors[keyof TemplatesListErrors];
+
+export type TemplatesListResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: NotificationTemplateList;
+};
+
+export type TemplatesListResponse = TemplatesListResponses[keyof TemplatesListResponses];
+
+export type TemplatesCreateData = {
+    body: CreateTemplateInput;
+    headers: {
+        Authorization: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/notify/templates';
+};
+
+export type TemplatesCreateErrors = {
+    /**
+     * The server could not understand the request due to invalid syntax.
+     */
+    400: ProblemResponse;
+    /**
+     * Access is unauthorized.
+     */
+    401: ProblemResponse;
+    /**
+     * Access is forbidden.
+     */
+    403: ProblemResponse;
+};
+
+export type TemplatesCreateError = TemplatesCreateErrors[keyof TemplatesCreateErrors];
+
+export type TemplatesCreateResponses = {
+    /**
+     * The request has succeeded and a new resource has been created as a result.
+     */
+    201: NotificationTemplate;
+};
+
+export type TemplatesCreateResponse = TemplatesCreateResponses[keyof TemplatesCreateResponses];
+
+export type TemplatesRemoveData = {
+    body?: never;
+    headers: {
+        Authorization: string;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/notify/templates/{id}';
+};
+
+export type TemplatesRemoveErrors = {
+    /**
+     * Access is unauthorized.
+     */
+    401: ProblemResponse;
+    /**
+     * Access is forbidden.
+     */
+    403: ProblemResponse;
+    /**
+     * The server cannot find the requested resource.
+     */
+    404: ProblemResponse;
+};
+
+export type TemplatesRemoveError = TemplatesRemoveErrors[keyof TemplatesRemoveErrors];
+
+export type TemplatesRemoveResponses = {
+    /**
+     * There is no content to send for this request, but the headers may be useful.
+     */
+    204: void;
+};
+
+export type TemplatesRemoveResponse = TemplatesRemoveResponses[keyof TemplatesRemoveResponses];
+
+export type TemplatesReadData = {
+    body?: never;
+    headers: {
+        Authorization: string;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/notify/templates/{id}';
+};
+
+export type TemplatesReadErrors = {
+    /**
+     * Access is unauthorized.
+     */
+    401: ProblemResponse;
+    /**
+     * Access is forbidden.
+     */
+    403: ProblemResponse;
+    /**
+     * The server cannot find the requested resource.
+     */
+    404: ProblemResponse;
+};
+
+export type TemplatesReadError = TemplatesReadErrors[keyof TemplatesReadErrors];
+
+export type TemplatesReadResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: NotificationTemplate;
+};
+
+export type TemplatesReadResponse = TemplatesReadResponses[keyof TemplatesReadResponses];
+
+export type TemplatesUpdateData = {
+    body: UpdateTemplateInput;
+    headers: {
+        Authorization: string;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/notify/templates/{id}';
+};
+
+export type TemplatesUpdateErrors = {
+    /**
+     * The server could not understand the request due to invalid syntax.
+     */
+    400: ProblemResponse;
+    /**
+     * Access is unauthorized.
+     */
+    401: ProblemResponse;
+    /**
+     * Access is forbidden.
+     */
+    403: ProblemResponse;
+    /**
+     * The server cannot find the requested resource.
+     */
+    404: ProblemResponse;
+};
+
+export type TemplatesUpdateError = TemplatesUpdateErrors[keyof TemplatesUpdateErrors];
+
+export type TemplatesUpdateResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: NotificationTemplate;
+};
+
+export type TemplatesUpdateResponse = TemplatesUpdateResponses[keyof TemplatesUpdateResponses];
+
+export type TemplatesRenderData = {
+    body: RenderTemplateInput;
+    headers: {
+        Authorization: string;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/notify/templates/{id}/render';
+};
+
+export type TemplatesRenderErrors = {
+    /**
+     * The server could not understand the request due to invalid syntax.
+     */
+    400: ProblemResponse;
+    /**
+     * Access is unauthorized.
+     */
+    401: ProblemResponse;
+    /**
+     * Access is forbidden.
+     */
+    403: ProblemResponse;
+    /**
+     * The server cannot find the requested resource.
+     */
+    404: ProblemResponse;
+};
+
+export type TemplatesRenderError = TemplatesRenderErrors[keyof TemplatesRenderErrors];
+
+export type TemplatesRenderResponses = {
+    /**
+     * The request has succeeded.
+     */
+    200: RenderedTemplate;
+};
+
+export type TemplatesRenderResponse = TemplatesRenderResponses[keyof TemplatesRenderResponses];
 
 export type NotifysHealthData = {
     body?: never;
