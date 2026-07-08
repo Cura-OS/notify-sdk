@@ -33,7 +33,7 @@
     "registry": "http://localhost:4873"
   },
   "scripts": {
-    "build": "bunx tsc",
+    "build": "tsc",
     "ci": "bun run lint && bun run typecheck && bun run test && bun run build",
     "generate": "bun scripts/generate.mjs",
     "lint": "oxlint .",

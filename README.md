@@ -1,91 +1,114 @@
-# @curaos/notify-sdk
+<div align="center">
 
-Typed client for `notify-service` - REST operations and event wire-types,
-**generated from the service's contracts**. No hand-written HTTP or Kafka
-plumbing; the SDK is the only client code a consumer needs.
 
-- REST client + request/response types ← `notify-service/specs/notify.tsp`
-  (TypeSpec → OpenAPI 3.1 → [`@hey-api/openapi-ts`](https://heyapi.dev)).
-- Event payload + header types ← `notify-service/specs/notify.asyncapi.yaml`
-  (AsyncAPI 3.0.0 → `@asyncapi/parser` → `json-schema-to-typescript`).
+# notify-sdk
 
-## Installation
+**A typed client for notify-service, generated from the service's TypeSpec REST contract and AsyncAPI event contract, so any consumer imports a typed REST client + event wire-types with zero hand-written transport code. The generation recipe is the reusable mold for the M10 SDK package class (#278-284).**
 
-```sh
+Part of the CuraOS (Care Oriented Stack) platform. A typed client for notify-service, generated from the service's TypeSpec REST contract and AsyncAPI event contract, so any consumer imports a typed REST client + event wire-types with zero hand-written transport code. The generation recipe is the reusable mold for the M10 SDK package class (#278-284). Domain: neutral.
+
+[![Status](https://img.shields.io/badge/status-private--alpha-informational)](#status)
+[![License: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](./LICENSE)
+[![Exposure: Closed](https://img.shields.io/badge/exposure-Closed-red)](#license)
+[![Module: Sdk](https://img.shields.io/badge/module-Sdk-informational)](#how-it-works)
+
+[Why](#why) · [Quick Start](#quick-start) · [Capabilities](#capabilities) · [How it Works](#how-it-works) · [Status](#status) · [Security](#security)
+
+</div>
+
+---
+
+## Why
+
+A typed client for notify-service, generated from the service's TypeSpec REST contract and AsyncAPI event contract, so any consumer imports a typed REST client + event wire-types with zero hand-written transport code. The generation recipe is the reusable mold for the M10 SDK package class (#278-284).
+
+<!-- curaos:keep -->
+<!-- /curaos:keep -->
+
+---
+
+## Quick Start
+
+```bash
 bun add @curaos/notify-sdk
 ```
 
-The package publishes to the CuraOS Verdaccio registry; `.npmrc` already scopes
-`@curaos:registry=http://localhost:4873`.
+<!-- curaos:keep -->
+<!-- /curaos:keep -->
 
-## Usage
+---
 
-Point the client at a running `notify-service` once, then call typed operations:
+## Capabilities
 
-```ts
-import { client, notifysHealth, notifysProtectedWrite, notifysRead } from '@curaos/notify-sdk';
+- Generate REST operations + request/response types from notify.tsp
+- Generate event payload + header wire-types from notify.asyncapi.yaml.
+- Expose a configurable client (client.setConfig / createClient).
+- One-command regeneration from the contracts (bun run generate).
 
-client.setConfig({ baseUrl: 'http://localhost:3000' });
+<!-- curaos:keep -->
+<!-- /curaos:keep -->
 
-const health = await notifysHealth();
+---
 
-const ack = await notifysProtectedWrite({
-  headers: { Authorization: `Bearer ${token}` },
-  body: { reason: 'demo write' }, // the ONLY accepted field (1..512 chars)
-});
+## How it Works
 
-const item = await notifysRead({
-  path: { id: 'n-1' },
-  headers: { Authorization: `Bearer ${token}` },
-});
-```
+| Area | Detail |
+|---|---|
+| Package | `@curaos/notify-sdk` |
+| Source | `backend/packages/notify-sdk` |
+| Domain | `neutral` |
+| Layer | `package` |
+| Exposure | Closed |
 
-Per-call client override (e.g. a second base URL):
+- Source path: `backend/packages/notify-sdk`
+- Generated documentation owner: `tools/codegen/src/repo-docs-emit.ts`
 
-```ts
-import { createClient } from '@hey-api/client-fetch';
+<!-- curaos:keep -->
+<!-- /curaos:keep -->
 
-const other = createClient({ baseUrl: 'https://gateway/api/v1/notify' });
-await notifysHealth({ client: other });
-```
+---
 
-## Event wire-types
+## API and Usage
 
-For event consumers, the SDK ships the **snake_case** envelope types the
-producer emits (do not camelCase - they are the on-the-wire contract):
+See [docs.curaos.abualruz.com](https://docs.curaos.abualruz.com) (interim).
 
-```ts
-import type { NotifyEventPayload, EventHeaders } from '@curaos/notify-sdk';
+See [API reference](./src/index.ts) or generated TypeDoc.
 
-function onNotify(payload: NotifyEventPayload, headers: EventHeaders) {
-  if (payload.type === 'NotifyCreated') { /* … */ }
-}
-```
+<!-- curaos:keep -->
+<!-- /curaos:keep -->
 
-> **Note (codegen #306):** `display_name` and `deleted_at` are nullable on the
-> wire but currently type as `string` (not `string | null`) - the source
-> AsyncAPI uses the deprecated `nullable: true` form that AsyncAPI 3.0.0
-> (JSON Schema 2020-12) does not honor. The types tighten to `| null` once #306
-> lands the 2020-12 `type: [..., "null"]` form and the spec is regenerated.
+---
 
-## Regenerating from the contract
+## Status
 
-One command re-runs the whole chain (service spec compile → REST client → event
-types) from the committed contracts:
+private alpha
 
-```sh
-bun run generate
-```
+- Docs generated from `tools/codegen/src/repo-docs-emit.ts`.
+- Public documentation: [docs.curaos.abualruz.com](https://docs.curaos.abualruz.com).
+- Changelog: [CHANGELOG.md](./CHANGELOG.md) when present.
 
-The generated output under `src/` is committed and guarded: `test/drift.test.ts`
-fails if the committed SDK is not byte-identical to a fresh regeneration - a
-contract change that was not re-run through `bun run generate`, or a generator
-version bump, is caught in CI.
+---
 
-## Commands
+## Security
 
-```sh
-bunx turbo run typecheck --filter=@curaos/notify-sdk
-bunx turbo run test      --filter=@curaos/notify-sdk
-bunx turbo run build     --filter=@curaos/notify-sdk
-```
+See [SECURITY.md](./SECURITY.md) for vulnerability reporting policy.
+
+---
+
+## Maintainers
+
+- CuraOS Team - [GitHub](https://github.com/Cura-OS)
+
+---
+
+## Contributing
+
+Contributions are handled through the repository maintainers. Public contribution guidelines are emitted for open and source-available repositories.
+
+By contributing, you agree that your contributions will be licensed under the same license as this project.
+
+---
+
+## License
+
+LicenseRef-CuraOS-Proprietary - CuraOS (Care Oriented Stack). See [LICENSE](./LICENSE) for details.
