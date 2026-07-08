@@ -1,91 +1,71 @@
-# @curaos/notify-sdk
+# notify-sdk _(@curaos/notify-sdk)_
 
-Typed client for `notify-service` - REST operations and event wire-types,
-**generated from the service's contracts**. No hand-written HTTP or Kafka
-plumbing; the SDK is the only client code a consumer needs.
+[![License: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](./LICENSE)
+[![Exposure: Closed](https://img.shields.io/badge/exposure-Closed-red)](#license)
+[![Module: Sdk](https://img.shields.io/badge/module-Sdk-informational)](#background)
 
-- REST client + request/response types ← `notify-service/specs/notify.tsp`
-  (TypeSpec → OpenAPI 3.1 → [`@hey-api/openapi-ts`](https://heyapi.dev)).
-- Event payload + header types ← `notify-service/specs/notify.asyncapi.yaml`
-  (AsyncAPI 3.0.0 → `@asyncapi/parser` → `json-schema-to-typescript`).
+CuraOS @curaos/notify-sdk - typed REST client + event wire-types generated from notify-service&#x27;s TypeSpec + AsyncAPI contracts (ADR-0103 TypeSpec-first). Zero hand-written transport code.
 
-## Installation
+Part of the CuraOS (Care Oriented Stack) platform. CuraOS @curaos/notify-sdk - typed REST client + event wire-types generated from notify-service&#x27;s TypeSpec + AsyncAPI contracts (ADR-0103 TypeSpec-first). Zero hand-written transport code. Domain: neutral.
 
-```sh
+## Table of Contents
+
+- [Background](#background)
+- [Install](#install)
+- [Usage](#usage)
+- [API](#api)
+- [Security](#security)
+- [Maintainers](#maintainers)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Background
+
+CuraOS @curaos/notify-sdk - typed REST client + event wire-types generated from notify-service&#x27;s TypeSpec + AsyncAPI contracts (ADR-0103 TypeSpec-first). Zero hand-written transport code.. This module is part of the CuraOS neutral domain, plain layer.
+
+<!-- curaos:keep -->
+<!-- Add module-specific background, architecture notes, and design decisions here.
+     This section survives re-emit (keep-fence protected). -->
+<!-- /curaos:keep -->
+
+## Install
+
+```bash
 bun add @curaos/notify-sdk
 ```
 
-The package publishes to the CuraOS Verdaccio registry; `.npmrc` already scopes
-`@curaos:registry=http://localhost:4873`.
-
 ## Usage
 
-Point the client at a running `notify-service` once, then call typed operations:
+See [docs.curaos.abualruz.com](https://docs.curaos.abualruz.com) (interim).
 
-```ts
-import { client, notifysHealth, notifysProtectedWrite, notifysRead } from '@curaos/notify-sdk';
+<!-- curaos:keep -->
+<!-- Add usage examples, code snippets, and integration patterns here.
+     This section survives re-emit (keep-fence protected). -->
+<!-- /curaos:keep -->
 
-client.setConfig({ baseUrl: 'http://localhost:3000' });
+## API
 
-const health = await notifysHealth();
+See [API reference](./src/index.ts) or generated TypeDoc.
 
-const ack = await notifysProtectedWrite({
-  headers: { Authorization: `Bearer ${token}` },
-  body: { reason: 'demo write' }, // the ONLY accepted field (1..512 chars)
-});
+<!-- curaos:keep -->
+<!-- Add API examples, request/response samples, and event payloads here.
+     This section survives re-emit (keep-fence protected). -->
+<!-- /curaos:keep -->
 
-const item = await notifysRead({
-  path: { id: 'n-1' },
-  headers: { Authorization: `Bearer ${token}` },
-});
-```
+## Security
 
-Per-call client override (e.g. a second base URL):
+See [SECURITY.md](./SECURITY.md) for vulnerability reporting policy.
 
-```ts
-import { createClient } from '@hey-api/client-fetch';
+## Maintainers
 
-const other = createClient({ baseUrl: 'https://gateway/api/v1/notify' });
-await notifysHealth({ client: other });
-```
+- CuraOS Team - [GitHub](https://github.com/Cura-OS)
 
-## Event wire-types
+## Contributing
 
-For event consumers, the SDK ships the **snake_case** envelope types the
-producer emits (do not camelCase - they are the on-the-wire contract):
+Contributions are handled through the repository maintainers. Public contribution guidelines are emitted for open and source-available repositories.
 
-```ts
-import type { NotifyEventPayload, EventHeaders } from '@curaos/notify-sdk';
+By contributing, you agree that your contributions will be licensed under the same license as this project.
 
-function onNotify(payload: NotifyEventPayload, headers: EventHeaders) {
-  if (payload.type === 'NotifyCreated') { /* … */ }
-}
-```
+## License
 
-> **Note (codegen #306):** `display_name` and `deleted_at` are nullable on the
-> wire but currently type as `string` (not `string | null`) - the source
-> AsyncAPI uses the deprecated `nullable: true` form that AsyncAPI 3.0.0
-> (JSON Schema 2020-12) does not honor. The types tighten to `| null` once #306
-> lands the 2020-12 `type: [..., "null"]` form and the spec is regenerated.
-
-## Regenerating from the contract
-
-One command re-runs the whole chain (service spec compile → REST client → event
-types) from the committed contracts:
-
-```sh
-bun run generate
-```
-
-The generated output under `src/` is committed and guarded: `test/drift.test.ts`
-fails if the committed SDK is not byte-identical to a fresh regeneration - a
-contract change that was not re-run through `bun run generate`, or a generator
-version bump, is caught in CI.
-
-## Commands
-
-```sh
-bunx turbo run typecheck --filter=@curaos/notify-sdk
-bunx turbo run test      --filter=@curaos/notify-sdk
-bunx turbo run build     --filter=@curaos/notify-sdk
-```
+LicenseRef-CuraOS-Proprietary - CuraOS (Care Oriented Stack). See [LICENSE](./LICENSE) for details.
