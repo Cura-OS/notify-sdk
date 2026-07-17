@@ -10,7 +10,7 @@
 // re-run through this command fails test/drift.test.ts (regenerate != committed).
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -31,6 +31,16 @@ function run(cmd, args, cwd) {
     );
     process.exit(r.status ?? 1);
   }
+}
+
+function runBin(bin, args, cwd) {
+  for (let dir = cwd; ; dir = dirname(dir)) {
+    const candidate = resolve(dir, 'node_modules/.bin', bin);
+    if (existsSync(candidate)) return run(candidate, args, cwd);
+    const parent = dirname(dir);
+    if (parent === dir) break;
+  }
+  return run(bin, args, cwd);
 }
 
 function normalizeOpenapiServers() {
@@ -66,9 +76,9 @@ run('bun', ['run', 'spec:openapi'], servicePath);
 normalizeOpenapiServers();
 
 // 2. OpenAPI -> typed REST client (config = openapi-ts.config.ts)
-// Pin the exact version (matches the package.json devDep) so a fresh SDK regen
-// never resolves bunx `@latest` (MODULE_NOT_FOUND / version-drift foot-gun).
-run('bunx', ['@hey-api/openapi-ts@0.98.1'], pkgRoot);
+// Use the package devDep binary. Network-resolving runners make local drift
+// checks flaky/offline-hostile even when the lockfile already pins the tool.
+runBin('openapi-ts', [], pkgRoot);
 
 // 3. AsyncAPI -> typed event wire-types
 run('bun', ['scripts/gen-events.mjs'], pkgRoot);
@@ -78,6 +88,6 @@ run('bun', ['scripts/gen-events.mjs'], pkgRoot);
 // otherwise rewrite - formatting here keeps the committed output == the hook
 // output == a fresh regen, so test/drift.test.ts stays byte-stable. (`.gen.ts`
 // is biome-ignored, so this only normalizes the emitted index files.)
-run('bunx', ['biome', 'format', '--write', 'src'], pkgRoot);
+runBin('biome', ['format', '--write', 'src'], pkgRoot);
 
 console.log('\nnotify-sdk regenerated from contracts.');
