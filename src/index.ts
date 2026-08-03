@@ -24,6 +24,3 @@ export type {
   ClinicalAlertPayload,
   EscalationRung,
 } from './events.gen';
-
-// gate probe (spec 6.5 shape B): fails `tsc --noEmit` and nothing else.
-export const gateProbe: number = 'not a number';
