@@ -12,7 +12,7 @@ permissions:
 jobs:
   ci:
     if: github.event.pull_request.draft == false
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64]
     steps:
       - name: Checkout CuraOS parent workspace
         uses: actions/checkout@v4
@@ -46,11 +46,18 @@ jobs:
         run: |
           set -euo pipefail
           git -c "url.https://x-access-token:${WORKSPACE_TOKEN}@github.com/.insteadOf=git@github.com:" \
+            -c "url.https://x-access-token:${WORKSPACE_TOKEN}@github.com/.insteadOf=https://github.com/" \
             submodule update --init --remote --depth 1 --jobs 8 \
-            backend/packages frontend/packages
+            backend/packages frontend/packages backend/services/notify-service
           # Fail closed: an empty package tree would silently degrade the install
           # into "no workspace siblings found" and the gate would stop guarding.
           test -n "$(find backend/packages -mindepth 2 -name package.json -print -quit)"
+          # The contract-drift guard regenerates src/ from the OWNING service's
+          # spec:openapi and resolves ../../services/notify-service as a FILESYSTEM path,
+          # not a package dependency, so workspace-protocol closure never pulls it
+          # in. Without it the guard reports "source service not checked out" and
+          # stops guarding, which is the one thing this gate exists to enforce.
+          test -f backend/services/notify-service/package.json
 
       - name: Overlay this revision into the parent workspace
         # The parent pins this repo at the committed submodule SHA, not the PR
