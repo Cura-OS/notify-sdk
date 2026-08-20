@@ -9,7 +9,15 @@
 
 import { describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, relative } from 'node:path';
 
 const pkgRoot = join(import.meta.dir, '..');
@@ -49,16 +57,64 @@ function sleep(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+// A killed run (CI timeout, SIGKILL, laptop sleep) used to leave this mkdir
+// mutex behind forever: every later drift test then spun the full deadline and
+// died on EEXIST, with no way out but a manual rmdir. The lock now carries its
+// owner's pid and is RECLAIMED when that owner is gone or has held it past the
+// TTL, so an orphan costs one grace window instead of a wedged suite.
+const LOCK_STALE_MS = 300_000;
+// Covers the mkdir -> write(pid) window: a lock this young has no pid file yet
+// and must NOT be read as an orphan.
+const LOCK_CLAIM_GRACE_MS = 5_000;
+const lockPidPath = join(lockDir, 'owner.pid');
+
+function lockAgeMs(): number | undefined {
+  try {
+    return Date.now() - statSync(lockDir).mtimeMs;
+  } catch {
+    return undefined; // released under us
+  }
+}
+
+function lockOwnerAlive(): boolean {
+  try {
+    const pid = Number.parseInt(readFileSync(lockPidPath, 'utf8').trim(), 10);
+    if (!Number.isInteger(pid) || pid <= 0) return false;
+    // Signal 0 probes for existence only; it is never delivered to the target.
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false; // no pid file, unreadable, or ESRCH: nobody owns this
+  }
+}
+
+/** True when the lock was taken (or already gone) and the caller should retry. */
+function reclaimStaleLock(): boolean {
+  const age = lockAgeMs();
+  if (age === undefined) return true; // vanished: retry immediately
+  if (age < LOCK_CLAIM_GRACE_MS) return false; // too young to judge
+  // Past the TTL we reclaim even from a "live" pid: that is either a wedged
+  // owner or a recycled pid, and both wedge every SDK in the workspace.
+  if (age < LOCK_STALE_MS && lockOwnerAlive()) return false;
+  rmSync(lockDir, { recursive: true, force: true });
+  return true;
+}
+
 function withGenerateLock<T>(fn: () => T): T {
-  const deadline = Date.now() + 300_000;
+  const deadline = Date.now() + LOCK_STALE_MS;
   for (;;) {
     try {
       mkdirSync(lockDir);
+      writeFileSync(lockPidPath, `${process.pid}`);
       break;
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
-      if (code !== 'EEXIST' || Date.now() > deadline) {
-        throw error;
+      if (code !== 'EEXIST') throw error;
+      if (reclaimStaleLock()) continue;
+      if (Date.now() > deadline) {
+        throw new Error(
+          `sdk drift generate lock held past ${LOCK_STALE_MS}ms by a live owner: ${lockDir}`,
+        );
       }
       sleep(100);
     }
