@@ -36,7 +36,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "ci": "bun -e \"const steps=['lint','typecheck','test','build']; let status=0; for (const step of steps) { const result=Bun.spawnSync(['bun','run',step],{stdio:['inherit','inherit','inherit']}); if (!result.success) status=1; } process.exit(status);\"",
+    "ci": "bun run lint && bun run typecheck && bun run test && bun run build",
     "generate": "bun scripts/generate.mjs",
     "lint": "oxlint .",
     "publish-smoke": "node ../../../scripts/sdk-package-publishing.mjs --package notify",
