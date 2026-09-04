@@ -61,11 +61,15 @@ function normalizeOpenapiServers() {
     '    variables: {}',
   ];
   const replacement = 'servers:\n' + servers.join('\n') + '\n';
-  const next = source.replace(/\nservers:\n[\s\S]*$/u, '\n' + replacement);
-  if (next === source) {
+  const serversBlock = /\nservers:\n[\s\S]*$/u;
+  // Check presence, not whether the substitution changes anything: the TypeSpec
+  // compiler's own @server output can already be byte-identical to `replacement`
+  // (both @server decorators emit this exact shape), so `next === source` is a
+  // false "missing block" signal on a no-op normalize.
+  if (!serversBlock.test(source)) {
     throw new Error('cannot normalize OpenAPI servers: missing root servers block in ' + openapiPath);
   }
-  writeFileSync(openapiPath, next);
+  writeFileSync(openapiPath, source.replace(serversBlock, '\n' + replacement));
 }
 
 // 1. service contract -> OpenAPI 3.1 (tsp compile specs/notify.tsp -> dist/openapi.yaml)
