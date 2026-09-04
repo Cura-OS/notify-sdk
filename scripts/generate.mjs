@@ -16,6 +16,7 @@ import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pkgRoot = resolve(here, '..');
+const repoRoot = resolve(pkgRoot, '..', '..', '..');
 const servicePath = resolve(pkgRoot, '../../services/notify-service');
 const openapiPath = resolve(servicePath, 'dist/openapi.yaml');
 const sdkPublicGatewayBaseUrl = undefined;
@@ -83,11 +84,24 @@ runBin('openapi-ts', [], pkgRoot);
 // 3. AsyncAPI -> typed event wire-types
 run('bun', ['scripts/gen-events.mjs'], pkgRoot);
 
-// 4. Format the generated output with the repo's biome config. @hey-api emits
-// long single-line `index.ts` re-exports that the pre-commit biome hook would
+// 4. Format the generated output. @hey-api emits long
+// single-line `index.ts` re-exports that the pre-commit biome hook would
 // otherwise rewrite - formatting here keeps the committed output == the hook
 // output == a fresh regen, so test/drift.test.ts stays byte-stable. (`.gen.ts`
-// is biome-ignored, so this only normalizes the emitted index files.)
-runBin('biome', ['format', '--write', 'src'], pkgRoot);
+// is biome-ignored, so this only normalizes the emitted index files.) The
+// root biome.json excludes backend/packages/** from its own file walk (each
+// package is a separate repo formatted on its own terms), so this step uses
+// a dedicated config scoped to just this package instead of ambient
+// config resolution, which would otherwise silently match zero files.
+runBin(
+  'biome',
+  [
+    'format',
+    '--write',
+    'src',
+    '--config-path=' + resolve(repoRoot, 'tools/codegen/config/sdk-generate-biome.json'),
+  ],
+  pkgRoot,
+);
 
 console.log('\nnotify-sdk regenerated from contracts.');
