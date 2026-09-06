@@ -25,25 +25,53 @@ permissions:
 
 jobs:
   cancel:
+    # Same-repo PRs only. On a fork, GitHub downgrades `actions: write` to read,
+    # so the cancel call answers 403; the old `gh` version swallowed that with a
+    # blanket `|| true`, and rethrowing it (which is correct, see below) would
+    # otherwise red this job on every fork PR close. The run would be wrong
+    # anyway: `head.ref` is the FORK's branch name, and listing the base repo by
+    # that name can match an unrelated branch that happens to share it.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     # Deliberately NOT uid-1000: this job exists to free that pool, so it must
     # never itself queue behind the runs it is here to cancel.
     runs-on: [self-hosted, linux, x64]
     timeout-minutes: 5
     steps:
+      # Uses github-script, NOT the gh CLI: this job deliberately runs on the
+      # plain self-hosted pool (see above), and that image has no gh on PATH,
+      # so every run of this workflow failed with "gh: command not found" and
+      # cancelled nothing at all. github-script needs no extra binary and hands
+      # back the REST client, so there is no JSON to parse by hand either.
       - name: Cancel queued and in-progress runs for the closed PR's branch
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          set -euo pipefail
-          for state in queued in_progress; do
-            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?branch=${BRANCH}&status=${state}&per_page=100" \
-              --jq '.workflow_runs[].id' \
-            | while read -r id; do
-                if [ "$id" = "${GITHUB_RUN_ID}" ]; then
-                  continue
-                fi
-                echo "cancelling run ${id} (${state}) on branch ${BRANCH}"
-                gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/runs/${id}/cancel" || true
-              done
-          done
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            let cancelled = 0;
+            for (const status of ['queued', 'in_progress']) {
+              const runs = await github.paginate(
+                github.rest.actions.listWorkflowRunsForRepo,
+                { ...context.repo, branch, status, per_page: 100 },
+              );
+              for (const run of runs) {
+                // Never cancel this cleanup run itself.
+                if (run.id === context.runId) continue;
+                core.info('cancelling run ' + run.id + ' (' + status + ') on branch ' + branch);
+                try {
+                  await github.rest.actions.cancelWorkflowRun({ ...context.repo, run_id: run.id });
+                  cancelled += 1;
+                } catch (error) {
+                  // A run that finished between listing and cancelling returns
+                  // 409, and one un-cancellable run must not strand the rest of
+                  // the queue. EVERYTHING ELSE RETHROWS. A 403 from an org
+                  // policy withdrawing actions: write, a 404, or secondary rate
+                  // limiting would otherwise leave this job green having
+                  // cancelled nothing, which is the exact defect the gh version
+                  // had: the only reason that one was ever found is that it died
+                  // loudly with exit 127.
+                  if (error.status !== 409) throw error;
+                  core.warning('run ' + run.id + ' finished before it could be cancelled (409)');
+                }
+              }
+            }
+            core.info('cancelled ' + cancelled + ' run(s) for ' + branch);
