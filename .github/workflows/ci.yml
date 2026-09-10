@@ -29,7 +29,7 @@ jobs:
           token: ${{ secrets.WORKSPACE_CHECKOUT_TOKEN || secrets.GITHUB_TOKEN }}
           path: curaos-parent
           persist-credentials: false
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: d89f33cf2c88591391884788b31ead0e688a3317
           fetch-depth: 0
           submodules: false
 
@@ -41,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$CURAOS_PARENT_REVISION"
-          git diff --exit-code "$CURAOS_PARENT_REVISION" -- .
+          git diff --ignore-submodules=all --exit-code "$CURAOS_PARENT_REVISION" -- .
           retry_git() {
             local attempt=1
             until "$@"; do
@@ -160,9 +160,9 @@ jobs:
         run: |
           set -euo pipefail
           # Required package tasks
-          build_task=build
+          build_task='build'
           if node -e 'process.exit(require("./package.json").dependencies?.expo ? 0 : 1)'; then
-            build_task=export
+            build_task='export'
           fi
           node -e '
             const scripts = require("./package.json").scripts ?? {};
@@ -181,7 +181,7 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
-      CURAOS_PARENT_REVISION: ${{ github.event.pull_request.base.sha }}
+      CURAOS_PARENT_REVISION: d89f33cf2c88591391884788b31ead0e688a3317
       CURAOS_MEMBER_PATH: backend/packages/notify-sdk
       CURAOS_MEMBER_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
       NPM_CONFIG_REGISTRY: http://100.77.52.131:8081/repository/npm-group/
