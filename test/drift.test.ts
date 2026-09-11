@@ -9,20 +9,11 @@
 
 import { describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const pkgRoot = join(import.meta.dir, '..');
 const srcDir = join(pkgRoot, 'src');
-const lockDir = join(pkgRoot, '..', '.sdk-drift-generate.lock');
 const serviceCandidates = [join(pkgRoot, '../../services/notify-service')];
 const allowMissingService = process.env.CURAOS_SDK_DRIFT_ALLOW_MISSING_SERVICE === '1';
 
@@ -53,80 +44,6 @@ function contractRegenUnavailableReason(): string | undefined {
   return undefined;
 }
 
-function sleep(ms: number): void {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-}
-
-// A killed run (CI timeout, SIGKILL, laptop sleep) used to leave this mkdir
-// mutex behind forever: every later drift test then spun the full deadline and
-// died on EEXIST, with no way out but a manual rmdir. The lock now carries its
-// owner's pid and is RECLAIMED when that owner is gone or has held it past the
-// TTL, so an orphan costs one grace window instead of a wedged suite.
-const LOCK_STALE_MS = 300_000;
-// Covers the mkdir -> write(pid) window: a lock this young has no pid file yet
-// and must NOT be read as an orphan.
-const LOCK_CLAIM_GRACE_MS = 5_000;
-const lockPidPath = join(lockDir, 'owner.pid');
-
-function lockAgeMs(): number | undefined {
-  try {
-    return Date.now() - statSync(lockDir).mtimeMs;
-  } catch {
-    return undefined; // released under us
-  }
-}
-
-function lockOwnerAlive(): boolean {
-  try {
-    const pid = Number.parseInt(readFileSync(lockPidPath, 'utf8').trim(), 10);
-    if (!Number.isInteger(pid) || pid <= 0) return false;
-    // Signal 0 probes for existence only; it is never delivered to the target.
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false; // no pid file, unreadable, or ESRCH: nobody owns this
-  }
-}
-
-/** True when the lock was taken (or already gone) and the caller should retry. */
-function reclaimStaleLock(): boolean {
-  const age = lockAgeMs();
-  if (age === undefined) return true; // vanished: retry immediately
-  if (age < LOCK_CLAIM_GRACE_MS) return false; // too young to judge
-  // Past the TTL we reclaim even from a "live" pid: that is either a wedged
-  // owner or a recycled pid, and both wedge every SDK in the workspace.
-  if (age < LOCK_STALE_MS && lockOwnerAlive()) return false;
-  rmSync(lockDir, { recursive: true, force: true });
-  return true;
-}
-
-function withGenerateLock<T>(fn: () => T): T {
-  const deadline = Date.now() + LOCK_STALE_MS;
-  for (;;) {
-    try {
-      mkdirSync(lockDir);
-      writeFileSync(lockPidPath, `${process.pid}`);
-      break;
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code !== 'EEXIST') throw error;
-      if (reclaimStaleLock()) continue;
-      if (Date.now() > deadline) {
-        throw new Error(
-          `sdk drift generate lock held past ${LOCK_STALE_MS}ms by a live owner: ${lockDir}`,
-        );
-      }
-      sleep(100);
-    }
-  }
-
-  try {
-    return fn();
-  } finally {
-    rmSync(lockDir, { recursive: true, force: true });
-  }
-}
-
 function walk(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir)) {
@@ -147,6 +64,35 @@ function snapshot(): Record<string, string> {
   return map;
 }
 
+// Full-tree snapshot (index.ts included). `bun run generate` biome-formats the
+// whole src/ tree, so restoring only the drift-compared files would still leave
+// index.ts mutated. Capture every file so restore() returns the working tree
+// byte-for-byte to its pre-test state.
+function snapshotTree(): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const file of walk(srcDir)) {
+    map[relative(srcDir, file)] = readFileSync(file, 'utf8');
+  }
+  return map;
+}
+
+// Undo any mutation `bun run generate` made to the working tree: rewrite files
+// whose content changed, delete files it newly created. The guard reads the
+// tree but must never mutate it - an in-place src/ rewrite mid-suite flakes
+// sibling tests that import from src/ later in the same full-suite run.
+function restore(before: Record<string, string>): void {
+  for (const file of walk(srcDir)) {
+    const rel = relative(srcDir, file);
+    if (!(rel in before)) {
+      rmSync(file, { force: true });
+      continue;
+    }
+    if (readFileSync(file, 'utf8') !== before[rel]) {
+      writeFileSync(file, before[rel]);
+    }
+  }
+}
+
 describe('contract-drift guard', () => {
   test('committed SDK == fresh regeneration from the contracts', () => {
     const unavailableReason = contractRegenUnavailableReason();
@@ -160,36 +106,45 @@ describe('contract-drift guard', () => {
       return;
     }
 
+    // Full-tree fingerprint the guard must never mutate.
+    const treeBefore = snapshotTree();
     const before = snapshot();
 
-    const result = withGenerateLock(() =>
-      spawnSync('bun', ['run', 'generate'], {
+    try {
+      const result = spawnSync('bun', ['run', 'generate'], {
         cwd: pkgRoot,
         encoding: 'utf8',
-      }),
-    );
-    expect(
-      result.status,
-      [
-        'bun run generate failed',
-        result.error ? `error: ${result.error.message}` : '',
-        result.stdout ? `stdout:\n${result.stdout}` : '',
-        result.stderr ? `stderr:\n${result.stderr}` : '',
-      ]
-        .filter(Boolean)
-        .join('\n\n'),
-    ).toBe(0);
+      });
+      expect(
+        result.status,
+        [
+          'bun run generate failed',
+          result.error ? `error: ${result.error.message}` : '',
+          result.stdout ? `stdout:\n${result.stdout}` : '',
+          result.stderr ? `stderr:\n${result.stderr}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+      ).toBe(0);
 
-    const after = snapshot();
+      const after = snapshot();
 
-    // Same set of generated files.
-    expect(Object.keys(after).toSorted()).toEqual(Object.keys(before).toSorted());
+      // Same set of generated files.
+      expect(Object.keys(after).toSorted()).toEqual(Object.keys(before).toSorted());
 
-    // Byte-identical contents. A mismatch means the committed output is stale
-    // (contract changed without `bun run generate`) OR a generator version
-    // drifted - run `bun run generate` under the committed lockfile and commit.
-    for (const path of Object.keys(before)) {
-      expect(after[path], `drift in ${path}`).toBe(before[path]);
+      // Byte-identical contents. A mismatch means the committed output is stale
+      // (contract changed without `bun run generate`) OR a generator version
+      // drifted - run `bun run generate` under the committed lockfile and commit.
+      for (const path of Object.keys(before)) {
+        expect(after[path], `drift in ${path}`).toBe(before[path]);
+      }
+    } finally {
+      // Guard must leave the working tree byte-identical - even after a real
+      // drift failure - so a full-suite run stays deterministic.
+      restore(treeBefore);
     }
+
+    // Prove the restore held: the tree is exactly as we found it.
+    expect(snapshotTree()).toEqual(treeBefore);
   }, 360_000);
 });
