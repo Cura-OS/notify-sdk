@@ -9,6 +9,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 // target; this import asserts the barrel resolves the factory in EVERY SDK
 // regen (recipe-level guard baked into `gen:sdk`). See #308.
 import { createClient } from '../src/rest/client';
+import { recordedFetch } from './cassettes/recorder';
 import {
   client,
   notifysHealth,
@@ -54,6 +55,12 @@ describe('@curaos/notify-sdk consumer surface', () => {
     // A consumer points the SDK at a service with ONE call, no plumbing.
     const cfg = client.setConfig({ baseUrl: 'http://localhost:3000' });
     expect(cfg.baseUrl).toBe('http://localhost:3000');
+  });
+
+  test('cassette replay refuses a missing fixture before any live request', async () => {
+    await expect(recordedFetch('__missing__', 'https://example.invalid')).rejects.toThrow(
+      'no cassette recorded',
+    );
   });
 
   test('REST request/response types match the service contract', () => {
